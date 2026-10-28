@@ -4,7 +4,7 @@ Coordinates SensorNode, Untrusted Aggregator, and Decryptor roles.
 """
 
 import math
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Tuple, Optional, Any, Sequence
 from fastecdsa.point import Point
 from src.config import G
 from src.encoding import (
