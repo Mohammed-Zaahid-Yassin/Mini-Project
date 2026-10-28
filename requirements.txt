@@ -1,0 +1,8 @@
+# Core Elliptic Curve Cryptography
+fastecdsa>=4.0.0
+
+# Testing Framework
+pytest>=8.0.0
+
+# Scientific Visualization & Graph Generation
+matplotlib>=3.8.0

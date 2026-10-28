@@ -1,0 +1,6 @@
+scenario,sensor_temp_celsius,n_sensors,encoded_m_sum,shifted_scalar_k,is_point_at_infinity
+All Min (-40°C),-40.0,10,1000,0,True
+Cold (0°C),0.0,10,5000,4000,False
+Room (23.5°C),23.5,10,7350,6350,False
+Hot (50°C),50.0,10,10000,9000,False
+All Max (+80°C),80.0,10,13000,12000,False

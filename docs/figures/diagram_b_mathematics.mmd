@@ -1,0 +1,41 @@
+graph TD
+    %% Mathematical Flowchart: Plaintext to Shifted Decrypted Point
+    
+    subgraph S_Inputs["1. Physical Sensor Readings"]
+        T_vals["Temperatures: T_1, T_2, ..., T_N in [-40°C, 80°C]"]
+    end
+
+    subgraph S_Encoding["2. Fixed-Point Encoding (C99 lroundf)"]
+        M_vals["Scalars: M_i = round_away_from_zero((T_i + 50.0) * 10.0)<br/>M_i in [100, 1300]"]
+        T_vals --> M_vals
+    end
+
+    subgraph S_Encryption["3. EC Lifted ElGamal Encryption"]
+        CT_vals["Ciphertexts: CT_i = (C1_i, C2_i)<br/>C1_i = r_i * G<br/>C2_i = M_i * G + r_i * Y"]
+        M_vals --> CT_vals
+    end
+
+    subgraph S_Aggregation["4. Homomorphic Aggregation (Untrusted Middleman)"]
+        AGG_vals["Aggregate Ciphertext:<br/>C1_agg = sum(C1_i) = (sum r_i) * G<br/>C2_agg = sum(C2_i) = (sum M_i) * G + (sum r_i) * Y"]
+        CT_vals --> AGG_vals
+    end
+
+    subgraph S_Decryption["5. Unmasking via Decryptor Private Key x"]
+        P_val["Decrypted Curve Point:<br/>P = C2_agg - x * C1_agg<br/>P = (sum M_i) * G = M_sum * G"]
+        AGG_vals --> P_val
+    end
+
+    subgraph S_Shift["6. Interval Shifting (Baseline Correction)"]
+        P_shift["Shifted Point:<br/>P_shifted = P - (100 * N) * G<br/>P_shifted = (M_sum - 100 * N) * G = k * G<br/>k in [0, 1200 * N]"]
+        P_val --> P_shift
+    end
+
+    subgraph S_Verification["7. Recovery / Verification Phase"]
+        Inf_Branch{"Is P_shifted == O?"}
+        Inf_Yes["Point at Infinity Lower Bound<br/>k = 0 -> M_sum = 100 * N<br/>Avg Temp = -40.0°C (Immediate recovery)"]
+        Inf_No["Bounded ECDLP Target (Weeks 1-4 Candidate Verification)<br/>Check P_shifted == (candidate_M_sum - 100*N) * G"]
+        
+        P_shift --> Inf_Branch
+        Inf_Branch -->|Yes| Inf_Yes
+        Inf_Branch -->|No| Inf_No
+    end

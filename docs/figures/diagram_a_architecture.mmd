@@ -1,0 +1,43 @@
+graph LR
+    %% Three-Tier Architecture for Privacy-Preserving IoT Telemetry (Weeks 1-4 Simulation)
+    
+    subgraph Tier1["TIER 1: Simulated Sensor Node (ESP32)"]
+        direction TB
+        T1_Sense["Temperature Sensor<br/>T in [-40.0°C, 80.0°C]"]
+        T1_Encode["Fixed-Point Encoder<br/>M = round_away_from_zero((T+50)*10)<br/>M in [100, 1300]"]
+        T1_Encrypt["Lifted ElGamal Encryptor<br/>Fresh CSPRNG scalar r<br/>C1 = r*G, C2 = M*G + r*Y"]
+        T1_Auth["Hop-1 Authenticator (HMAC-SHA256)<br/>Key: K_sensor_i<br/>MAC(K_sensor_i, C1||C2||Seq||Epoch)"]
+        
+        T1_Sense --> T1_Encode --> T1_Encrypt --> T1_Auth
+    end
+
+    subgraph Tier2["TIER 2: Untrusted Aggregator (PC/Gateway)"]
+        direction TB
+        T2_Verify["Hop-1 Verifier & Filter<br/>Constant-time HMAC check<br/>Replay filter (Seq > last_seq)<br/>Epoch freshness check"]
+        T2_Agg["Homomorphic EC Accumulator<br/>C1_agg = sum(C1_i)<br/>C2_agg = sum(C2_i)<br/>(Individual ciphertexts hidden)"]
+        T2_Meta["Metadata Generator<br/>N = active sensor count<br/>Participation Bitmask"]
+        T2_Auth["Hop-2 Authenticator (HMAC-SHA256)<br/>Key: K_decryptor<br/>MAC(K_dec, C1_agg||C2_agg||N||Epoch||Mask)"]
+        
+        T2_Verify --> T2_Agg --> T2_Meta --> T2_Auth
+    end
+
+    subgraph Tier3["TIER 3: Trusted Decryptor (Server/Sink)"]
+        direction TB
+        T3_Verify["Hop-2 Verifier & Metadata Audit<br/>Constant-time HMAC check<br/>Epoch monotonicity check<br/>Bitmask Hamming weight == N"]
+        T3_Decrypt["Point Unmasking (Holds Private Key x)<br/>P = C2_agg - x * C1_agg<br/>P = M_sum * G"]
+        T3_Shift["Interval Shifting (Baseline Correction)<br/>P_shifted = P - (100*N)*G<br/>Maps sum to [0, 1200*N]*G"]
+        T3_Edge["Edge-Case & Candidate Verifier<br/>If P_shifted == O: M_sum = 100*N<br/>Else: Verify candidate k*G == P_shifted"]
+        
+        T3_Verify --> T3_Decrypt --> T3_Shift --> T3_Edge
+    end
+
+    T1_Auth ==>|"Authenticated Hop-1 Packet<br/>(SensorID, C1, C2, Seq, Epoch, MAC1)"| T2_Verify
+    T2_Auth ==>|"Authenticated Hop-2 Packet<br/>(C1_agg, C2_agg, N, Epoch, Bitmask, MAC2)"| T3_Verify
+
+    %% Styling & Roles
+    classDef sensor fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
+    classDef agg fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
+    classDef dec fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
+    class T1_Sense,T1_Encode,T1_Encrypt,T1_Auth sensor;
+    class T2_Verify,T2_Agg,T2_Meta,T2_Auth agg;
+    class T3_Verify,T3_Decrypt,T3_Shift,T3_Edge dec;

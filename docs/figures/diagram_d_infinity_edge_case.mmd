@@ -1,0 +1,29 @@
+graph TD
+    %% Point at Infinity Edge Case Flow
+    
+    StartNode["N Sensors Report Telemetry"] --> Readings{"What did sensors read?"}
+    
+    Readings -->|"All N sensors read -40.0°C (Absolute Min)"| MinPath["All M_i = 100<br/>M_sum = 100 * N"]
+    Readings -->|"Mixed or warmer readings"| NormalPath["Some M_i > 100<br/>M_sum > 100 * N"]
+    Readings -->|"All N sensors read +80.0°C (Absolute Max)"| MaxPath["All M_i = 1300<br/>M_sum = 1300 * N"]
+
+    MinPath --> DecMin["Decrypted Point: P = (100 * N) * G"]
+    NormalPath --> DecNorm["Decrypted Point: P = (M_sum) * G"]
+    MaxPath --> DecMax["Decrypted Point: P = (1300 * N) * G"]
+
+    DecMin --> ShiftMin["Interval Shift: P_shifted = P - (100 * N) * G<br/>P_shifted = (100*N - 100*N) * G = 0 * G"]
+    DecNorm --> ShiftNorm["Interval Shift: P_shifted = P - (100 * N) * G<br/>P_shifted = (M_sum - 100*N) * G = k * G (k > 0)"]
+    DecMax --> ShiftMax["Interval Shift: P_shifted = P - (100 * N) * G<br/>P_shifted = (1200 * N) * G"]
+
+    ShiftMin --> InfCheck{"Is P_shifted == O?<br/>(Z == 0 in Jacobian coords)"}
+    ShiftNorm --> InfCheck
+    ShiftMax --> InfCheck
+
+    InfCheck -->|"YES (k = 0)"| DirectResolve["SHORT-CIRCUIT / IMMEDIATE RETURN<br/>Lower-bound triggered!<br/>Recovered M_sum = 100 * N<br/>Average Temperature = -40.0°C<br/>Bypasses DLP Search (Zero Latency)"]
+    InfCheck -->|"NO (k in [1, 1200*N])"| NormalDLP["Pass to Bounded ECDLP Search Engine<br/>(Weeks 1-4: Candidate Verifier<br/>Weeks 5+: BSGS / Kangaroo)"]
+
+    %% Styling
+    classDef infNode fill:#ffebee,stroke:#c62828,stroke-width:2px;
+    classDef normNode fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    class DirectResolve infNode;
+    class NormalDLP normNode;

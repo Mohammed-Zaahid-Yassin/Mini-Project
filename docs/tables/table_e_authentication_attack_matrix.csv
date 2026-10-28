@@ -1,0 +1,13 @@
+Attack ID,Scenario Name,Modified Field / Tampered Component,Expected Outcome,Actual Outcome,Cryptographic / Protocol Explanation
+ATK-01,Valid Sensor Packet,None (normal transmission),Packet Accepted,ACCEPTED (Valid=True),Hop-1 MAC verified; sequence number monotonic; epoch matches
+ATK-02,Man-in-the-Middle Ciphertext Tamper,C2 point altered (C2 + G),Drop Packet,REJECT_INVALID_HOP1_MAC,HMAC covers canonical C2 serialization; any alteration breaks MAC
+ATK-03,Hop-1 MAC Forgery,Random 32-byte MAC injected,Drop Packet,REJECT_INVALID_HOP1_MAC,Without sensor secret key attacker cannot forge valid SHA-256 HMAC
+ATK-04,Packet Replay Attack,Duplicate previous valid packet,Drop Packet,REJECT_STALE_EPOCH or REJECT_REPLAY,Aggregator enforces active epoch and strictly increasing sequence number
+ATK-05,Out-of-Order Sequence Number,Seq decremented below last_seq,Drop Packet,REJECT_REPLAY_OR_OUT_OF_ORDER,Sequence policy mandates seq > last_seq per enrolled sensor identity
+ATK-06,Stale Cross-Epoch Packet,Epoch set to past epoch,Drop Packet,REJECT_STALE_EPOCH,Aggregator drops packets belonging to inactive or expired epochs
+ATK-07,Unregistered Sensor Injection,SensorID not in aggregator universe,Drop Packet,REJECT_UNKNOWN_SENSOR,Aggregator only processes packets from pre-enrolled sensor keys
+ATK-08,Hop-2 Aggregate Forgery,Random 32-byte MAC on aggregate,Drop Aggregate,REJECT_INVALID_HOP2_MAC,Decryptor validates Hop-2 MAC using shared secret decryptor key
+ATK-09,Metadata Tampering (Count),Claimed N count modified (N + 5),Drop Aggregate,REJECT_COUNT_BITMASK_MISMATCH,Decryptor verifies Hamming weight of Bitmask matches claimed N
+ATK-10,Metadata Tampering (Bitmask),Bitmask bytes altered,Drop Aggregate,REJECT_COUNT_BITMASK_MISMATCH or REJECT_INVALID_HOP2_MAC,Bitmask is cryptographically bound into Hop-2 HMAC payload
+ATK-11,Non-Monotonic Epoch at Decryptor,Aggregate epoch < last_seen_epoch,Drop Aggregate,REJECT_NON_MONOTONIC_EPOCH,Decryptor enforces forward progression of epochs to prevent rollbacks
+ATK-12,Sensor Key Confusion / Substitution,Sensor 1 packet verified with Sensor 2 key,Verification Fails,False (MAC mismatch),Each sensor has independent secret key; compromise of one does not compromise others

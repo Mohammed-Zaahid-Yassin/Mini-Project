@@ -1,0 +1,9 @@
+security_test_case,protocol_outcome,trials_conducted,enforcement_rate_pct
+Valid Sensor Packet,Accepted,50,100.0
+Modified Ciphertext (Hop 1),Rejected (Bad MAC),30,100.0
+Forged Sensor MAC,Rejected (Bad MAC),30,100.0
+Replayed Sequence Number,Rejected (Stale Seq),25,100.0
+Stale / Outdated Epoch,Rejected (Epoch Stale),25,100.0
+Forged Aggregate MAC (Hop 2),Rejected (Bad MAC),25,100.0
+Tampered Count / Bitmask,Rejected (Metadata),25,100.0
+Sensor Key Confusion,Rejected (Isolated Key),20,100.0

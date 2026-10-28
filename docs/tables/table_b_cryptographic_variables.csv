@@ -1,0 +1,16 @@
+Variable,Domain / Mathematical Type,Description,Role in Protocol
+T,float in [-40.0 80.0] (°C),Physical ambient temperature reading,Raw telemetry captured by sensor node (DHT22/SHT3x)
+M,int in [100 1300],Fixed-point encoded positive integer scalar,M = round((T + 50.0) * 10.0); discrete scalar for EC multiplication
+x,int in [1 q-1],Decryptor private key (secret scalar),Master private key held strictly by Decryptor to unmask ciphertexts
+Y,Point on P-256 (65 bytes),Decryptor public key point (Y = x*G),Public encryption key distributed to all sensor nodes
+G,Point on P-256 (65 bytes),Standard base generator point of P-256,Fixed curve parameter generating prime-order cyclic subgroup
+r,int in [1 q-1],Ephemeral encryption scalar (nonce),Fresh CSPRNG random scalar blinding each individual ciphertext
+C1,Point on P-256 (65 bytes),Ephemeral blinding point (C1 = r*G),Public component of ciphertext allowing Diffie-Hellman unmasking
+C2,Point on P-256 (65 bytes),Masked message point (C2 = M*G + r*Y),Blinded message point holding temperature scalar M
+N,int (>= 1),Number of participating sensors,Count of valid sensor ciphertexts included in aggregate
+P,Point on P-256,Unmasked decrypted curve point (P = M_sum*G),Intermediate point computed as C2_agg - x*C1_agg
+P_shifted,Point on P-256,Baseline-corrected curve point (P - 100*N*G),Target point representing k*G where k in [0 1200*N]
+Seq,uint64 (monotonically increasing),Sensor message sequence number,Prevents replay and out-of-order packet injection per sensor
+Epoch,uint64 (time epoch identifier),Discrete network time window,Ensures freshness and synchronizes aggregation collection windows
+MAC,bytes (32 bytes HMAC-SHA256),Cryptographic authentication tag,Authenticates payload integrity and sender origin (Hop 1 and Hop 2)
+Bitmask,bytes (ceil(U/8) bytes),Binary participation bitmask,Identifies exactly which sensors in universe U contributed to aggregate

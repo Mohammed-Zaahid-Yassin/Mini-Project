@@ -1,0 +1,26 @@
+sequenceDiagram
+    autonumber
+    actor Sensor as Sensor Node i (ESP32 Sim)
+    actor Aggregator as Untrusted Aggregator (PC Sim)
+    actor Decryptor as Trusted Decryptor (Sink Sim)
+
+    Note over Sensor: Encode: M_i = round((T_i+50)*10)<br/>Encrypt: C1_i=r*G, C2_i=M_i*G+r*Y<br/>Seq_i = Seq_i + 1
+    Note over Sensor: Hop-1 MAC = HMAC(K_sensor_i, C1||C2||Seq||Epoch)
+    Sensor->>Aggregator: SensorPacket (ID_i, C1_i, C2_i, Seq_i, Epoch, MAC1)
+
+    Note over Aggregator: 1. Verify ID_i enrolled<br/>2. Verify Epoch freshness<br/>3. Verify Seq_i > last_seq[i] (Replay Check)<br/>4. Verify HMAC constant-time
+    alt Invalid Hop-1 Check
+        Aggregator-->>Sensor: Drop packet (log rejection reason)
+    else Valid Packet
+        Note over Aggregator: Accept packet & update last_seq[i]<br/>Accumulate: C1_agg += C1_i, C2_agg += C2_i<br/>Update Bitmask: set bit i = 1
+    end
+
+    Note over Aggregator: Epoch Closes (N valid sensors)<br/>Hop-2 MAC = HMAC(K_dec, C1_agg||C2_agg||N||Epoch||Bitmask)
+    Aggregator->>Decryptor: AggregatePacket (C1_agg, C2_agg, N, Epoch, Bitmask, MAC2)
+
+    Note over Decryptor: 1. Verify Hop-2 HMAC constant-time<br/>2. Verify Epoch >= last_seen_epoch<br/>3. Verify Bitmask length & HammingWeight(Bitmask) == N<br/>4. Verify Quorum bounds
+    alt Invalid Hop-2 Check
+        Note over Decryptor: Reject Aggregate & Halt
+    else Valid Aggregate
+        Note over Decryptor: Unmask: P = C2_agg - x * C1_agg<br/>Shift: P_shifted = P - (100*N)*G<br/>Check Edge Case: P_shifted == O?<br/>Verify Candidate Plaintext Sum
+    end

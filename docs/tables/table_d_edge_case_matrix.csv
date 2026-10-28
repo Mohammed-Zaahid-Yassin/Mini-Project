@@ -1,0 +1,12 @@
+Test ID,Scenario Description,Input Temperatures (°C),Sensor Count (N),Expected Encoded Sum (M_sum),Expected Shifted Point (P_shifted),Actual Behavior / Result
+EC-01,Single sensor minimum bound,[-40.0],1,100,Point at Infinity (O),PASSED: is_infinity() returns True; recovers -40.0°C directly
+EC-02,Two sensors minimum bound,[-40.0, -40.0],2,200,Point at Infinity (O),PASSED: is_infinity() returns True; recovers -40.0°C directly
+EC-03,Five sensors minimum bound,[-40.0 x 5],5,500,Point at Infinity (O),PASSED: is_infinity() returns True; recovers -40.0°C directly
+EC-04,Ten sensors minimum bound,[-40.0 x 10],10,1000,Point at Infinity (O),PASSED: is_infinity() returns True; recovers -40.0°C directly
+EC-05,Single sensor maximum bound,[80.0],1,1300,1200 * G,PASSED: P_shifted == 1200*G; candidate verified
+EC-06,Five sensors maximum bound,[80.0 x 5],5,6500,6000 * G (= 1200*N*G),PASSED: P_shifted == 6000*G; candidate verified
+EC-07,Mixed boundary extrema,[-40.0, -40.0, 80.0, 80.0],4,2800,2400 * G,PASSED: P_shifted == 2400*G; not infinity
+EC-08,Zero point telemetry,[0.0, 0.0, 0.0],3,1500,1200 * G,PASSED: P_shifted == 1200*G; candidate verified
+EC-09,Zero sensor count (N=0),[],0,N/A,ValueError Raised,PASSED: ValueError correctly raised
+EC-10,Negative sensor count (N=-1),[],-1,N/A,ValueError Raised,PASSED: ValueError correctly raised
+EC-11,Off-curve point injected,N/A,1,N/A,ValueError Raised,PASSED: Point validation detects equation violation

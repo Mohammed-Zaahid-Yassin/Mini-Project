@@ -1,0 +1,24 @@
+Function Name,Module,Purpose,Inputs,Outputs,Mathematical / Protocol Significance
+round_away_from_zero,src/encoding.py,Round float breaking ties away from zero,val: float,int,Replicates C99 lroundf() semantics for cross-platform microcontroller parity
+encode_temperature,src/encoding.py,Convert physical temperature to positive integer scalar,temperature: float,encoded_m: int,M = round((T + 50.0) * 10.0); bounds M in [100 1300]
+decode_temperature,src/encoding.py,Convert encoded integer scalar back to Celsius,encoded_m: int,temperature: float,T = (M - 500) / 10.0; single-sensor inversion
+decode_temperature_sum,src/encoding.py,Convert aggregate encoded sum back to physical temperature sum,encoded_m_sum: int; n_sensors: int,temp_sum: float,T_sum = (M_sum - 500*N) / 10.0
+generate_keypair,src/elgamal.py,Generate P-256 private scalar and public curve point,None,(private_key: int; public_key: Point),x in [1 q-1]; Y = x*G using CSPRNG
+validate_keypair,src/elgamal.py,Verify public key corresponds to private key,private_key: int; public_key: Point,bool,(x * G) == Y validation
+encrypt,src/elgamal.py,Encrypt encoded integer using EC Lifted ElGamal,encoded_m: int; public_key: Point,Ciphertext(c1; c2),C1 = r*G; C2 = M*G + r*Y with fresh ephemeral r
+decrypt_point,src/elgamal.py,Unmask ciphertext to produce message curve point,ciphertext: Ciphertext; private_key: int,Point,P = C2 - x*C1 = M*G; produces EC point (not scalar)
+point_to_bytes,src/elgamal.py,Serialize EC point to canonical 65 bytes,pt: Point,bytes (65 bytes),0x04 || X_32 || Y_32 (affine) or 65 zero bytes (infinity)
+bytes_to_point,src/elgamal.py,Deserialize 65 bytes to P-256 point,data: bytes,Point,Validates coordinates and curve equation y^2 = x^3 - 3x + b
+is_infinity,src/elgamal.py,Detect whether point is Point at Infinity O,pt: Point,bool,Tests Jacobian Z == 0 or 0*G; additive identity
+aggregate_ciphertexts,src/aggregation.py,Homomorphically add multiple ciphertexts,ciphertexts: Sequence[Ciphertext],Ciphertext,C1_agg = sum(C1_i); C2_agg = sum(C2_i)
+decrypt_aggregate_point,src/aggregation.py,Unmask aggregate ciphertext to produce sum point,aggregate_ciphertext: Ciphertext; private_key: int,Point,P = C2_agg - x*C1_agg = (sum M_i)*G
+apply_interval_shift,src/aggregation.py,Subtract baseline to narrow ECDLP interval,decrypted_point: Point; n_sensors: int,Point,P_shifted = P - (100*N)*G = (M_sum - 100*N)*G
+handle_infinity_edge_case,src/aggregation.py,Detect and resolve all -40°C readings,p_shifted: Point; n_sensors: int,(bool; Optional[int]; Optional[float]),Short-circuits DLP if P_shifted == O -> M_sum = 100*N
+verify_candidate_sum,src/aggregation.py,Verify known candidate plaintext sum,p_shifted: Point; candidate_m_sum: int; n_sensors: int,bool,Checks P_shifted == (candidate - 100*N)*G
+build_bitmask,src/authentication.py,Construct participation bitmask for reporting sensors,reporting_sensor_ids; sensor_universe,bytes,Compact O(U/8) byte representation of reporting nodes
+count_bitmask_sensors,src/authentication.py,Count set bits in participation bitmask,bitmask: bytes,int,Hamming weight; verifies claimed N matches active sensors
+decode_bitmask_sensors,src/authentication.py,Recover reporting sensor IDs from bitmask,bitmask: bytes; sensor_universe,List[str],Extracts node identities from active bits
+compute_hop1_mac,src/authentication.py,Compute HMAC-SHA256 for Hop-1 sensor packet,sensor_key; sensor_id; c1; c2; seq; epoch,bytes (32 bytes),HMAC(K_i; Domain || ID || C1 || C2 || Seq || Epoch)
+verify_hop1_mac,src/authentication.py,Verify Hop-1 MAC in constant time,sensor_key; sensor_id; c1; c2; seq; epoch; mac,bool,hmac.compare_digest() prevents timing side-channels
+compute_hop2_mac,src/authentication.py,Compute HMAC-SHA256 for Hop-2 aggregate packet,decryptor_key; c1_agg; c2_agg; n_count; epoch; bitmask,bytes (32 bytes),HMAC(K_dec; Domain || C1_agg || C2_agg || N || Epoch || Mask)
+verify_hop2_mac,src/authentication.py,Verify Hop-2 MAC in constant time,decryptor_key; c1_agg; c2_agg; n_count; epoch; bitmask; mac,bool,hmac.compare_digest() authenticates aggregate metadata

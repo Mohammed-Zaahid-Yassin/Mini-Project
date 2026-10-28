@@ -1,0 +1,9 @@
+sensor_count_n,reference_encoded_sum,shifted_scalar_k,mathematical_match
+1,653,553,True
+2,1465,1265,True
+5,3640,3140,True
+10,7579,6579,True
+20,14980,12980,True
+50,37819,32819,True
+75,55799,48299,True
+100,75869,65869,True
